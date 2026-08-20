@@ -77,6 +77,7 @@
         display: grid;
         grid-template-columns: 1.1fr 0.9fr;
         gap: 18px;
+        align-items: start;
       }
       .card {
         background: linear-gradient(145deg, #151b28, #0d111a);
@@ -86,10 +87,52 @@
         box-shadow: 0 18px 60px #0005;
       }
       .now {
-        min-height: 390px;
+        height: 620px;
+        min-height: 620px;
+        box-sizing: border-box;
         display: flex;
         flex-direction: column;
-        justify-content: space-between;
+        justify-content: center;
+        align-items: center;
+        gap: 26px;
+      }
+
+      /* Keep the entire now-playing unit visually centered,
+         even when the queue card on the right becomes taller. */
+      .now > div {
+        width: 100%;
+      }
+
+      .now > div:first-child {
+        max-width: 430px;
+      }
+
+      .now > div:last-child {
+        max-width: 520px;
+      }
+
+      .now .album {
+        height: 170px;
+      }
+
+      .now .song {
+        text-align: center;
+      }
+
+      .now .badge {
+        margin-top: 14px;
+      }
+
+      .now .song h2 {
+        margin-top: 12px;
+      }
+
+      .now .controls {
+        margin-top: 0;
+      }
+
+      .now .sub-controls {
+        margin-top: 12px;
       }
       .album {
         height: 190px;
@@ -362,6 +405,21 @@
       }
       .queue {
         margin-top: 18px;
+        min-height: 0;
+      }
+      #queueList {
+        max-height: 390px;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        padding-right: 6px;
+        margin-top: 8px;
+      }
+      #queueList::-webkit-scrollbar {
+        width: 6px;
+      }
+      #queueList::-webkit-scrollbar-thumb {
+        background: #303a50;
+        border-radius: 999px;
       }
       .queue-head {
         display: flex;
@@ -411,6 +469,7 @@
         color: var(--muted);
       }
       .player {
+        display: none;
         margin-top: 18px;
         background: #080b11;
         border-radius: 18px;
@@ -463,20 +522,93 @@
         margin-top: 6px;
       }
       @media (max-width: 760px) {
-        .grid {
-          grid-template-columns: 1fr;
+        .now {
+          height: auto;
+          min-height: 540px;
+          gap: 22px;
         }
-        .hero {
-          padding: 44px 0 26px;
+        .now .album {
+          height: 155px;
+        }
+      }
+
+      @media (max-width: 760px) {
+        .app {
+          padding: 16px 12px 28px;
         }
         .top {
           align-items: flex-start;
         }
-        .now {
-          min-height: 350px;
+        .live {
+          display: none;
         }
-        .sub-controls {
-          flex-wrap: wrap;
+        .hero {
+          padding: 32px 0 24px;
+          text-align: left;
+        }
+        .hero h1 {
+          font-size: clamp(34px, 12vw, 52px);
+        }
+        .grid {
+          grid-template-columns: 1fr;
+          gap: 12px;
+        }
+        .card {
+          border-radius: 20px;
+          padding: 16px;
+        }
+        .now {
+          min-height: 480px;
+        }
+        .album {
+          height: 150px;
+          font-size: 56px;
+        }
+        .source-row,
+        .moods {
+          gap: 7px;
+        }
+        .choice {
+          padding: 10px 11px;
+          font-size: 13px;
+        }
+        .search {
+          flex-direction: column;
+        }
+        .search button {
+          min-height: 50px;
+        }
+        .controls {
+          gap: 12px;
+        }
+        #queueList {
+          max-height: 330px;
+        }
+        .track {
+          gap: 9px;
+        }
+        .track strong {
+          white-space: normal;
+          line-clamp: 2;
+          -webkit-line-clamp: 2;
+          display: -webkit-box;
+          -webkit-box-orient: vertical;
+        }
+      }
+
+      @media (max-width: 420px) {
+        .brand {
+          font-size: 19px;
+        }
+        .choice {
+          flex: 1 1 calc(50% - 7px);
+          text-align: center;
+        }
+        .moods .choice {
+          flex-basis: calc(50% - 7px);
+        }
+        .card {
+          padding: 14px;
         }
       }
     </style>
@@ -600,7 +732,6 @@
             <button class="choice active" data-source="youtube">
               ▶ YouTube
             </button>
-            <button class="choice" data-source="spotify">◉ Spotify</button>
             <button class="choice" data-source="google">
               ⌕ Google Discover
             </button>
@@ -641,9 +772,6 @@
           </div>
 
           <div class="player" id="player">
-            <div class="note" id="playerPlaceholder">
-              Player will appear here after a playable source is connected.
-            </div>
             <div class="mp3-player" id="mp3Player">
               <div class="mp3-title" id="mp3Title">No file loaded</div>
               <input
@@ -711,8 +839,7 @@
         </aside>
       </main>
       <div class="footer">
-        DriverDJ • Search → discover → validate playable source → queue →
-        auto-next
+        DriverDJ • Search → discover → queue → auto-next
         <div class="keys">
           <kbd>Space</kbd> play/pause &nbsp; <kbd>←</kbd>/<kbd>→</kbd> prev/next
           &nbsp; <kbd>↑</kbd>/<kbd>↓</kbd> volume &nbsp; <kbd>M</kbd> mute
@@ -845,7 +972,8 @@
 
       function updatePlayButtonEnabled() {
         const btn = document.getElementById("playBtn");
-        btn.disabled = source === "youtube" && !playerReady;
+        btn.disabled =
+          (source === "youtube" || source === "google") && !playerReady;
       }
 
       /* ---------------- source / mood selection ---------------- */
@@ -856,22 +984,31 @@
             document
               .querySelectorAll("[data-source]")
               .forEach((x) => x.classList.remove("active"));
+
             b.classList.add("active");
             source = b.dataset.source;
+
             document.getElementById("sourceBadge").textContent =
               source === "google"
-                ? "GOOGLE DISCOVERY"
+                ? "GOOGLE DISCOVER"
                 : source.toUpperCase() + " SOURCE";
-            document.getElementById("mp3box").style.display =
-              source === "mp3" ? "flex" : "none";
 
             const isMp3 = source === "mp3";
+            document.getElementById("mp3box").style.display = isMp3
+              ? "flex"
+              : "none";
             document.getElementById("mp3Player").style.display = isMp3
               ? "flex"
               : "none";
-            document.getElementById("playerPlaceholder").style.display = isMp3
-              ? "none"
-              : "block";
+            document.getElementById("player").style.display = isMp3
+              ? "block"
+              : "none";
+
+            if (source === "google") {
+              setStatus(
+                "Google Discover mode is on. Songs are discovered from your query and played through YouTube.",
+              );
+            }
 
             updatePlayButtonEnabled();
           }),
@@ -909,17 +1046,8 @@
 
       async function startRadio() {
         if (source === "mp3") return;
-        if (source === "spotify") {
-          setStatus("Spotify player integration is not connected yet.", true);
-          return;
-        }
-        if (source === "google") {
-          setStatus(
-            "Google Discover isn't a playable audio source yet — try YouTube.",
-            true,
-          );
-          return;
-        }
+        // Google Discover uses the same playable YouTube engine after
+        // building a broader discovery query.
         if (!YOUTUBE_API_KEY) {
           setStatus(
             "Paste your YouTube API key in this HTML file first.",
@@ -932,7 +1060,10 @@
           return;
         }
 
-        const q = buildQuery();
+        let q = buildQuery();
+        if (source === "google") {
+          q = q + " official song music video popular";
+        }
         const startBtn = document.getElementById("startBtn");
         startBtn.disabled = true;
         setStatus("Searching: " + q);
@@ -1030,7 +1161,7 @@
         meta.textContent =
           queue.length > idx + 1 ? queue.length - idx - 1 + " queued" : "";
 
-        const upcoming = queue.slice(idx + 1, idx + 6);
+        const upcoming = queue.slice(idx + 1);
         if (!upcoming.length) {
           list.innerHTML =
             '<div class="note">More songs will be searched automatically.</div>';
