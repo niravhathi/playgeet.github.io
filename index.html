@@ -1,0 +1,1384 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Driver DJ — Long Drive Radio</title>
+    <style>
+      :root {
+        --bg: #090b12;
+        --panel: #121722;
+        --soft: #1a2130;
+        --text: #f6f7fb;
+        --muted: #8992a5;
+        --accent: #ffb000;
+        --accent2: #ff5d3d;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: radial-gradient(circle at 50% -20%, #283452 0, #090b12 42%);
+        color: var(--text);
+        font-family:
+          Inter,
+          system-ui,
+          -apple-system,
+          sans-serif;
+        min-height: 100vh;
+      }
+      .app {
+        max-width: 1100px;
+        margin: auto;
+        padding: 28px 20px 40px;
+      }
+      .top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+      }
+      .brand {
+        font-size: 22px;
+        font-weight: 800;
+        letter-spacing: 0.4px;
+      }
+      .brand span {
+        color: var(--accent);
+      }
+      .live {
+        color: #9da6b8;
+        font-size: 13px;
+      }
+      .hero {
+        padding: 56px 0 34px;
+        text-align: center;
+      }
+      .eyebrow {
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 2px;
+      }
+      .hero h1 {
+        font-size: clamp(38px, 7vw, 72px);
+        line-height: 0.95;
+        margin: 15px 0 18px;
+      }
+      .hero p {
+        max-width: 620px;
+        margin: auto;
+        color: var(--muted);
+        font-size: 17px;
+        line-height: 1.6;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 18px;
+      }
+      .card {
+        background: linear-gradient(145deg, #151b28, #0d111a);
+        border: 1px solid #263047;
+        border-radius: 26px;
+        padding: 24px;
+        box-shadow: 0 18px 60px #0005;
+      }
+      .now {
+        min-height: 390px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+      .album {
+        height: 190px;
+        border-radius: 20px;
+        background: linear-gradient(135deg, #ffb000, #ff5d3d 45%, #5a35ff);
+        position: relative;
+        overflow: hidden;
+        display: grid;
+        place-items: center;
+        font-size: 72px;
+      }
+      .album.spinning {
+        animation: none;
+      }
+      .album .disc {
+        transition: transform 0.2s linear;
+      }
+      .road {
+        position: absolute;
+        width: 160%;
+        height: 8px;
+        background: #fff7;
+        transform: rotate(-25deg);
+        bottom: 34px;
+        left: -30%;
+      }
+      .badge {
+        display: inline-flex;
+        background: #ffffff12;
+        color: var(--accent);
+        padding: 7px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .badge.buffering {
+        color: var(--accent2);
+      }
+      .song h2 {
+        font-size: 28px;
+        margin: 16px 0 4px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+      }
+      .song p {
+        color: var(--muted);
+        margin: 0;
+      }
+      .controls {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+        margin-top: 18px;
+      }
+      .icon,
+      .play {
+        border: 0;
+        color: white;
+        cursor: pointer;
+      }
+      .icon {
+        background: transparent;
+        font-size: 22px;
+      }
+      .icon.toggle.on {
+        color: var(--accent);
+      }
+      .icon:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+      }
+      .play {
+        width: 62px;
+        height: 62px;
+        border-radius: 50%;
+        background: var(--accent);
+        font-size: 24px;
+        color: #111;
+        display: grid;
+        place-items: center;
+      }
+      .play:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      /* --- seek / progress --- */
+      .seek-wrap {
+        margin-top: 20px;
+      }
+      input[type="range"].seek {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 100%;
+        height: 5px;
+        border-radius: 10px;
+        background: linear-gradient(
+          to right,
+          var(--accent) 0%,
+          var(--accent) var(--progress, 0%),
+          #ffffff18 var(--progress, 0%),
+          #ffffff18 100%
+        );
+        outline: none;
+        cursor: pointer;
+        margin: 0;
+      }
+      input[type="range"].seek::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 13px;
+        height: 13px;
+        border-radius: 50%;
+        background: var(--accent);
+        border: 2px solid #0d111a;
+        margin-top: -4px;
+        box-shadow: 0 0 0 3px #ffb00022;
+      }
+      input[type="range"].seek::-moz-range-thumb {
+        width: 13px;
+        height: 13px;
+        border-radius: 50%;
+        background: var(--accent);
+        border: 2px solid #0d111a;
+      }
+      input[type="range"].seek::-moz-range-track {
+        height: 5px;
+        border-radius: 10px;
+        background: #ffffff18;
+      }
+      input[type="range"].seek::-moz-range-progress {
+        height: 5px;
+        border-radius: 10px;
+        background: var(--accent);
+      }
+      .time-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 11.5px;
+        color: var(--muted);
+        margin-top: 6px;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .sub-controls {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 16px;
+        gap: 14px;
+      }
+      .vol-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+        max-width: 150px;
+      }
+      .vol-row input[type="range"] {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 100%;
+        height: 4px;
+        border-radius: 10px;
+        background: linear-gradient(
+          to right,
+          #cbd2e0 0%,
+          #cbd2e0 var(--vol, 80%),
+          #ffffff18 var(--vol, 80%),
+          #ffffff18 100%
+        );
+        cursor: pointer;
+      }
+      .vol-row input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        background: #cbd2e0;
+        margin-top: -3.5px;
+      }
+      .vol-row input[type="range"]::-moz-range-thumb {
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        background: #cbd2e0;
+        border: none;
+      }
+      .vol-row input[type="range"]::-moz-range-track {
+        height: 4px;
+        border-radius: 10px;
+        background: #ffffff18;
+      }
+      .mode-btns {
+        display: flex;
+        gap: 6px;
+      }
+      .mode-btns .icon {
+        font-size: 16px;
+        background: #ffffff0d;
+        border-radius: 9px;
+        width: 32px;
+        height: 32px;
+      }
+
+      h3 {
+        margin: 0 0 14px;
+      }
+      .source-row,
+      .moods {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 9px;
+      }
+      .choice {
+        border: 1px solid #303a50;
+        background: #0c111a;
+        color: #aeb7c8;
+        border-radius: 12px;
+        padding: 11px 13px;
+        cursor: pointer;
+        font-weight: 650;
+      }
+      .choice.active {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #17120a;
+      }
+      .search {
+        display: flex;
+        gap: 10px;
+        margin-top: 22px;
+      }
+      .search input {
+        flex: 1;
+        min-width: 0;
+        background: #090d15;
+        border: 1px solid #303a50;
+        color: white;
+        padding: 14px;
+        border-radius: 13px;
+        outline: none;
+      }
+      .search button,
+      .primary {
+        background: var(--accent);
+        border: 0;
+        border-radius: 13px;
+        padding: 0 17px;
+        font-weight: 800;
+        cursor: pointer;
+        color: #15110a;
+      }
+      .search button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .note {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.5;
+        margin-top: 16px;
+      }
+      .note.err {
+        color: var(--accent2);
+      }
+      .queue {
+        margin-top: 18px;
+      }
+      .queue-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .queue-head span {
+        font-size: 11px;
+        color: var(--muted);
+        font-weight: 650;
+      }
+      .track {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 0;
+        border-bottom: 1px solid #ffffff0d;
+        cursor: pointer;
+        border-radius: 10px;
+      }
+      .track:hover {
+        background: #ffffff08;
+      }
+      .num {
+        color: var(--muted);
+        width: 20px;
+        flex-shrink: 0;
+        text-align: center;
+      }
+      .mini {
+        width: 38px;
+        height: 38px;
+        border-radius: 9px;
+        background: #222b3e;
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+      }
+      .track strong {
+        display: block;
+        font-size: 14px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .track small {
+        color: var(--muted);
+      }
+      .player {
+        margin-top: 18px;
+        background: #080b11;
+        border-radius: 18px;
+        padding: 14px;
+        min-height: 66px;
+      }
+      .mp3box {
+        display: none;
+        gap: 8px;
+      }
+      .mp3box input {
+        flex: 1;
+        background: #111722;
+        border: 1px solid #303a50;
+        border-radius: 10px;
+        color: white;
+        padding: 10px;
+      }
+      .mp3-player {
+        display: none;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .mp3-player .row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .mp3-title {
+        font-size: 13px;
+        color: var(--muted);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      kbd {
+        background: #ffffff12;
+        border-radius: 5px;
+        padding: 1px 6px;
+        font-family: inherit;
+        font-size: 11px;
+      }
+      .footer {
+        text-align: center;
+        color: #667087;
+        font-size: 12px;
+        margin-top: 24px;
+      }
+      .footer .keys {
+        margin-top: 6px;
+      }
+      @media (max-width: 760px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+        .hero {
+          padding: 44px 0 26px;
+        }
+        .top {
+          align-items: flex-start;
+        }
+        .now {
+          min-height: 350px;
+        }
+        .sub-controls {
+          flex-wrap: wrap;
+        }
+      }
+    </style>
+    <script src="https://www.youtube.com/iframe_api"></script>
+  </head>
+  <body>
+    <div class="app">
+      <header class="top">
+        <div class="brand">DRIVER<span>DJ</span></div>
+        <div class="live">● AUTO DISCOVERY RADIO</div>
+      </header>
+      <section class="hero">
+        <div class="eyebrow">PRESS PLAY. JUST DRIVE.</div>
+        <h1>Your road. Your music.</h1>
+        <p>
+          Long-drive songs, driver favourites and nostalgic old hits —
+          automatically discovered and queued for the journey.
+        </p>
+      </section>
+
+      <main class="grid">
+        <section class="card now">
+          <div>
+            <div class="album">
+              🚗
+              <div class="road"></div>
+            </div>
+            <div class="song">
+              <span class="badge" id="sourceBadge">YOUTUBE SOURCE</span>
+              <h2 id="title">Ready for the road</h2>
+              <p id="artist">Choose a mood and press Start Radio</p>
+            </div>
+          </div>
+          <div>
+            <div class="controls">
+              <button
+                class="icon toggle"
+                id="shuffleBtn"
+                title="Shuffle"
+                onclick="toggleShuffle()"
+              >
+                🔀
+              </button>
+              <button
+                class="icon"
+                id="prevBtn"
+                onclick="previous()"
+                title="Previous"
+              >
+                ⏮
+              </button>
+              <button
+                class="play"
+                id="playBtn"
+                onclick="togglePlay()"
+                disabled
+                title="Play / Pause"
+              >
+                ▶
+              </button>
+              <button
+                class="icon"
+                id="nextBtn"
+                onclick="nextTrack()"
+                title="Next"
+              >
+                ⏭
+              </button>
+              <button
+                class="icon toggle"
+                id="repeatBtn"
+                title="Repeat"
+                onclick="cycleRepeat()"
+              >
+                🔁
+              </button>
+            </div>
+
+            <div class="seek-wrap">
+              <input
+                type="range"
+                class="seek"
+                id="seek"
+                min="0"
+                max="100"
+                value="0"
+                step="0.1"
+              />
+              <div class="time-row">
+                <span id="curTime">0:00</span>
+                <span id="durTime">0:00</span>
+              </div>
+            </div>
+
+            <div class="sub-controls">
+              <div class="vol-row">
+                <button
+                  class="icon"
+                  id="muteBtn"
+                  onclick="toggleMute()"
+                  title="Mute"
+                >
+                  🔊
+                </button>
+                <input
+                  type="range"
+                  id="volume"
+                  min="0"
+                  max="100"
+                  value="80"
+                  oninput="setVolume(this.value)"
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <aside class="card">
+          <h3>Choose your source</h3>
+          <div class="source-row">
+            <button class="choice active" data-source="youtube">
+              ▶ YouTube
+            </button>
+            <button class="choice" data-source="spotify">◉ Spotify</button>
+            <button class="choice" data-source="google">
+              ⌕ Google Discover
+            </button>
+            <button class="choice" data-source="mp3">♫ MP3 URL</button>
+          </div>
+
+          <div class="mp3box" id="mp3box">
+            <input id="mp3url" placeholder="Paste direct .mp3 URL" /><button
+              class="primary"
+              onclick="playMP3()"
+            >
+              Play
+            </button>
+          </div>
+
+          <h3 style="margin-top: 24px">What's the vibe?</h3>
+          <div class="moods">
+            <button class="choice active mood">Long Drive</button
+            ><button class="choice mood">Driver's Choice</button>
+            <button class="choice mood">90s</button
+            ><button class="choice mood">2000s</button>
+            <button class="choice mood">Romantic</button
+            ><button class="choice mood">Punjabi</button>
+            <button class="choice mood">Gujarati</button
+            ><button class="choice mood">Surprise Me 🎲</button>
+          </div>
+
+          <div class="search">
+            <input
+              id="query"
+              placeholder="Or type: Arijit Singh night drive..."
+              onkeydown="if (event.key === 'Enter') startRadio();"
+            /><button id="startBtn" onclick="startRadio()">START RADIO</button>
+          </div>
+          <div class="note" id="status">
+            Discovery mode will generate a query, search the selected provider,
+            filter duplicates and keep the next track ready.
+          </div>
+
+          <div class="player" id="player">
+            <div class="note" id="playerPlaceholder">
+              Player will appear here after a playable source is connected.
+            </div>
+            <div class="mp3-player" id="mp3Player">
+              <div class="mp3-title" id="mp3Title">No file loaded</div>
+              <input
+                type="range"
+                class="seek"
+                id="mp3Seek"
+                min="0"
+                max="100"
+                value="0"
+                step="0.1"
+              />
+              <div class="time-row">
+                <span id="mp3Cur">0:00</span>
+                <span id="mp3Dur">0:00</span>
+              </div>
+              <div class="row">
+                <button class="icon" id="mp3PlayBtn" onclick="toggleMP3Play()">
+                  ▶
+                </button>
+                <div class="vol-row" style="max-width: 120px">
+                  <button
+                    class="icon"
+                    onclick="toggleMP3Mute()"
+                    id="mp3MuteBtn"
+                  >
+                    🔊
+                  </button>
+                  <input
+                    type="range"
+                    id="mp3Volume"
+                    min="0"
+                    max="100"
+                    value="80"
+                    oninput="setMP3Volume(this.value)"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="queue">
+            <div class="queue-head">
+              <h3 style="margin: 0">Up next</h3>
+              <span id="queueMeta"></span>
+            </div>
+            <div id="queueList">
+              <div class="track">
+                <span class="num">01</span>
+                <div class="mini">🎵</div>
+                <div>
+                  <strong>Searching next track…</strong
+                  ><small>Auto queue</small>
+                </div>
+              </div>
+              <div class="track">
+                <span class="num">02</span>
+                <div class="mini">🎵</div>
+                <div>
+                  <strong>Your road never stops</strong
+                  ><small>Discovery engine</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </main>
+      <div class="footer">
+        DriverDJ • Search → discover → validate playable source → queue →
+        auto-next
+        <div class="keys">
+          <kbd>Space</kbd> play/pause &nbsp; <kbd>←</kbd>/<kbd>→</kbd> prev/next
+          &nbsp; <kbd>↑</kbd>/<kbd>↓</kbd> volume &nbsp; <kbd>M</kbd> mute
+          &nbsp; <kbd>S</kbd> shuffle
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const YOUTUBE_API_KEY = "AIzaSyBMzr4XnRwVdNUou5UQmTEEu8w04ANRUYA";
+
+      let source = "youtube";
+      let selectedMood = "Long Drive";
+      let playing = false;
+      let player,
+        playerReady = false;
+      let queue = [],
+        idx = -1,
+        history = [];
+      let errorSkipping = false;
+      let shuffleOn = false;
+      let repeatMode = "off"; // off | all | one
+      let volume = 80;
+      let mutedVolume = null;
+      let progressTimer = null;
+      let seekDragging = false;
+
+      /* ---------------- utilities ---------------- */
+
+      function fmtTime(sec) {
+        if (!isFinite(sec) || sec < 0) sec = 0;
+        sec = Math.floor(sec);
+        const m = Math.floor(sec / 60);
+        const s = sec % 60;
+        return m + ":" + String(s).padStart(2, "0");
+      }
+
+      function decodeHtml(text) {
+        const textarea = document.createElement("textarea");
+        textarea.innerHTML = text;
+        return textarea.value;
+      }
+
+      function setStatus(msg, isErr) {
+        const el = document.getElementById("status");
+        el.textContent = msg;
+        el.classList.toggle("err", !!isErr);
+      }
+
+      /* ---------------- YouTube player ---------------- */
+
+      function onYouTubeIframeAPIReady() {
+        player = new YT.Player("youtubePlayer", {
+          height: "1",
+          width: "1",
+          playerVars: {
+            playsinline: 1,
+            rel: 0,
+            controls: 0,
+          },
+          events: {
+            onReady: () => {
+              playerReady = true;
+              player.setVolume(volume);
+              setStatus("Ready. Select a vibe and press START RADIO.");
+              updatePlayButtonEnabled();
+            },
+            onStateChange: (e) => {
+              if (e.data === YT.PlayerState.PLAYING) {
+                errorSkipping = false;
+                playing = true;
+                sync();
+                startProgressTimer();
+              }
+              if (e.data === YT.PlayerState.PAUSED) {
+                playing = false;
+                sync();
+                stopProgressTimer();
+              }
+              if (e.data === YT.PlayerState.BUFFERING) {
+                document
+                  .getElementById("sourceBadge")
+                  .classList.add("buffering");
+              } else {
+                document
+                  .getElementById("sourceBadge")
+                  .classList.remove("buffering");
+              }
+              // Only move to next track when YouTube confirms the current one ended.
+              if (e.data === YT.PlayerState.ENDED) {
+                stopProgressTimer();
+                trackEnded();
+              }
+            },
+            onError: (e) => {
+              // Some YouTube search results cannot be embedded.
+              // Skip only one failed result, not the whole queue at once.
+              if (errorSkipping) return;
+              errorSkipping = true;
+              setStatus("That result cannot play here. Trying the next song…");
+              setTimeout(nextTrack, 1200);
+            },
+          },
+        });
+      }
+
+      function startProgressTimer() {
+        stopProgressTimer();
+        progressTimer = setInterval(() => {
+          if (source !== "youtube" || !playerReady || seekDragging) return;
+          const dur = player.getDuration() || 0;
+          const cur = player.getCurrentTime() || 0;
+          updateSeekUI(cur, dur);
+        }, 250);
+      }
+
+      function stopProgressTimer() {
+        if (progressTimer) clearInterval(progressTimer);
+        progressTimer = null;
+      }
+
+      function updateSeekUI(cur, dur) {
+        const seekEl = document.getElementById("seek");
+        const pct = dur > 0 ? (cur / dur) * 100 : 0;
+        seekEl.value = pct;
+        seekEl.style.setProperty("--progress", pct + "%");
+        document.getElementById("curTime").textContent = fmtTime(cur);
+        document.getElementById("durTime").textContent = fmtTime(dur);
+      }
+
+      function updatePlayButtonEnabled() {
+        const btn = document.getElementById("playBtn");
+        btn.disabled = source === "youtube" && !playerReady;
+      }
+
+      /* ---------------- source / mood selection ---------------- */
+
+      document.querySelectorAll("[data-source]").forEach(
+        (b) =>
+          (b.onclick = () => {
+            document
+              .querySelectorAll("[data-source]")
+              .forEach((x) => x.classList.remove("active"));
+            b.classList.add("active");
+            source = b.dataset.source;
+            document.getElementById("sourceBadge").textContent =
+              source === "google"
+                ? "GOOGLE DISCOVERY"
+                : source.toUpperCase() + " SOURCE";
+            document.getElementById("mp3box").style.display =
+              source === "mp3" ? "flex" : "none";
+
+            const isMp3 = source === "mp3";
+            document.getElementById("mp3Player").style.display = isMp3
+              ? "flex"
+              : "none";
+            document.getElementById("playerPlaceholder").style.display = isMp3
+              ? "none"
+              : "block";
+
+            updatePlayButtonEnabled();
+          }),
+      );
+
+      document.querySelectorAll(".mood").forEach(
+        (b) =>
+          (b.onclick = () => {
+            document
+              .querySelectorAll(".mood")
+              .forEach((x) => x.classList.remove("active"));
+            b.classList.add("active");
+            selectedMood = b.textContent.replace(" 🎲", "");
+          }),
+      );
+
+      function buildQuery() {
+        const custom = document.getElementById("query").value.trim();
+        if (custom) return custom;
+
+        const queries = {
+          "Long Drive": "Hindi Bollywood long drive songs official music",
+          "Driver's Choice": "Hindi Punjabi driving songs official music",
+          "90s": "90s Hindi Bollywood songs official music",
+          "2000s": "2000s Bollywood songs official music",
+          Romantic: "romantic Hindi songs official music",
+          Punjabi: "Punjabi driving songs official music",
+          Gujarati: "Gujarati songs official music",
+          "Surprise Me": "popular Hindi Punjabi songs official music",
+        };
+        return queries[selectedMood] || queries["Long Drive"];
+      }
+
+      /* ---------------- radio / search ---------------- */
+
+      async function startRadio() {
+        if (source === "mp3") return;
+        if (source === "spotify") {
+          setStatus("Spotify player integration is not connected yet.", true);
+          return;
+        }
+        if (source === "google") {
+          setStatus(
+            "Google Discover isn't a playable audio source yet — try YouTube.",
+            true,
+          );
+          return;
+        }
+        if (!YOUTUBE_API_KEY) {
+          setStatus(
+            "Paste your YouTube API key in this HTML file first.",
+            true,
+          );
+          return;
+        }
+        if (!playerReady) {
+          setStatus("YouTube player is loading…");
+          return;
+        }
+
+        const q = buildQuery();
+        const startBtn = document.getElementById("startBtn");
+        startBtn.disabled = true;
+        setStatus("Searching: " + q);
+        document.getElementById("title").textContent = "Finding songs…";
+        document.getElementById("artist").textContent =
+          "Searching YouTube Music results";
+
+        try {
+          const url =
+            "https://www.googleapis.com/youtube/v3/search?" +
+            "part=snippet&type=video&videoEmbeddable=true&videoCategoryId=10" +
+            "&videoDuration=medium&maxResults=25" +
+            "&q=" +
+            encodeURIComponent(q) +
+            "&key=" +
+            encodeURIComponent(YOUTUBE_API_KEY);
+
+          const response = await fetch(url);
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error?.message || "YouTube search failed");
+          }
+
+          const fresh = data.items.filter(
+            (x) => x.id?.videoId && !history.includes(x.id.videoId),
+          );
+          let results = fresh.length
+            ? fresh
+            : data.items.filter((x) => x.id?.videoId);
+
+          if (!results.length)
+            throw new Error("No playable music results found.");
+
+          if (shuffleOn) results = shuffleArray(results);
+
+          queue = queue.slice(0, idx + 1).concat(results);
+          if (idx === -1) idx = 0;
+          playCurrent();
+        } catch (e) {
+          console.error(e);
+          setStatus("Search error: " + e.message, true);
+        } finally {
+          startBtn.disabled = false;
+        }
+      }
+
+      function shuffleArray(arr) {
+        const a = arr.slice();
+        for (let i = a.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+      }
+
+      function playCurrent() {
+        const item = queue[idx];
+        if (!item) {
+          startRadio();
+          return;
+        }
+
+        const videoId = item.id.videoId;
+        if (history[history.length - 1] !== videoId) history.push(videoId);
+
+        document.getElementById("title").textContent = decodeHtml(
+          item.snippet.title,
+        );
+        document.getElementById("artist").textContent = decodeHtml(
+          item.snippet.channelTitle,
+        );
+        setStatus("Now playing • " + (idx + 1) + " of " + queue.length);
+
+        renderQueue();
+
+        errorSkipping = false;
+        player.loadVideoById(videoId);
+        setTimeout(() => player.playVideo(), 250);
+        playing = true;
+        sync();
+        updateSeekUI(0, 0);
+        updatePrevNextEnabled();
+      }
+
+      function playIndex(i) {
+        if (i < 0 || i >= queue.length) return;
+        idx = i;
+        playCurrent();
+      }
+
+      function renderQueue() {
+        const list = document.getElementById("queueList");
+        const meta = document.getElementById("queueMeta");
+        meta.textContent =
+          queue.length > idx + 1 ? queue.length - idx - 1 + " queued" : "";
+
+        const upcoming = queue.slice(idx + 1, idx + 6);
+        if (!upcoming.length) {
+          list.innerHTML =
+            '<div class="note">More songs will be searched automatically.</div>';
+          return;
+        }
+
+        let out = "";
+        upcoming.forEach((item, i) => {
+          const realIndex = idx + 1 + i;
+          out +=
+            '<div class="track" onclick="playIndex(' +
+            realIndex +
+            ')">' +
+            '<span class="num">' +
+            String(i + 1).padStart(2, "0") +
+            "</span>" +
+            '<div class="mini">🎵</div><div><strong>' +
+            decodeHtml(item.snippet.title) +
+            "</strong><small>" +
+            decodeHtml(item.snippet.channelTitle) +
+            "</small></div></div>";
+        });
+        list.innerHTML = out;
+      }
+
+      function updatePrevNextEnabled() {
+        document.getElementById("nextBtn").disabled = false;
+        document.getElementById("prevBtn").disabled =
+          idx <= 0 && history.length <= 1;
+      }
+
+      /* ---------------- transport controls ---------------- */
+
+      function trackEnded() {
+        if (repeatMode === "one") {
+          player.seekTo(0, true);
+          player.playVideo();
+          return;
+        }
+        nextTrack();
+      }
+
+      function nextTrack() {
+        if (source === "mp3") return; // single file, nothing to advance to
+        idx += 1;
+        if (idx < queue.length) {
+          playCurrent();
+        } else if (repeatMode === "all" && queue.length) {
+          idx = 0;
+          playCurrent();
+        } else {
+          setStatus("Finding a fresh set of songs…");
+          startRadio();
+        }
+      }
+
+      function previous() {
+        if (source === "mp3") {
+          const a = document.getElementById("audio");
+          if (a) a.currentTime = 0;
+          return;
+        }
+        if (!playerReady) return;
+        // If we're more than 3s into the track, restart it instead of
+        // jumping back a whole song (standard media-player behaviour).
+        const cur = player.getCurrentTime ? player.getCurrentTime() : 0;
+        if (cur > 3 || idx <= 0) {
+          player.seekTo(0, true);
+          return;
+        }
+        idx -= 1;
+        playCurrent();
+      }
+
+      function togglePlay() {
+        if (source === "mp3") {
+          toggleMP3Play();
+          return;
+        }
+
+        if (!playerReady) return;
+
+        if (queue.length === 0) {
+          startRadio();
+          return;
+        }
+
+        if (player.getPlayerState() === YT.PlayerState.PLAYING) {
+          player.pauseVideo();
+          playing = false;
+        } else {
+          player.playVideo();
+          playing = true;
+        }
+        sync();
+      }
+
+      function sync() {
+        document.getElementById("playBtn").textContent = playing ? "❚❚" : "▶";
+      }
+
+      function toggleShuffle() {
+        shuffleOn = !shuffleOn;
+        document.getElementById("shuffleBtn").classList.toggle("on", shuffleOn);
+        setStatus(
+          shuffleOn
+            ? "Shuffle on — new results will be shuffled."
+            : "Shuffle off.",
+        );
+      }
+
+      function cycleRepeat() {
+        repeatMode =
+          repeatMode === "off" ? "all" : repeatMode === "all" ? "one" : "off";
+        const btn = document.getElementById("repeatBtn");
+        btn.classList.toggle("on", repeatMode !== "off");
+        btn.textContent = repeatMode === "one" ? "🔂" : "🔁";
+        btn.title =
+          repeatMode === "off"
+            ? "Repeat off"
+            : repeatMode === "all"
+              ? "Repeat all"
+              : "Repeat one";
+      }
+
+      /* ---------------- YouTube seek bar ---------------- */
+
+      const seekEl = document.getElementById("seek");
+      seekEl.addEventListener("input", () => {
+        seekDragging = true;
+        if (!playerReady) return;
+        const dur = player.getDuration() || 0;
+        const cur = (seekEl.value / 100) * dur;
+        document.getElementById("curTime").textContent = fmtTime(cur);
+        seekEl.style.setProperty("--progress", seekEl.value + "%");
+      });
+      seekEl.addEventListener("change", () => {
+        if (playerReady && source === "youtube") {
+          const dur = player.getDuration() || 0;
+          player.seekTo((seekEl.value / 100) * dur, true);
+        }
+        seekDragging = false;
+      });
+
+      /* ---------------- volume ---------------- */
+
+      function setVolume(val) {
+        volume = Number(val);
+        mutedVolume = null;
+        document.getElementById("volume").style.setProperty("--vol", val + "%");
+        if (playerReady && source === "youtube") player.setVolume(volume);
+        updateMuteIcon();
+      }
+
+      function toggleMute() {
+        const volEl = document.getElementById("volume");
+        if (mutedVolume === null) {
+          mutedVolume = volume;
+          setVolume(0);
+          volEl.value = 0;
+        } else {
+          setVolume(mutedVolume);
+          volEl.value = mutedVolume;
+          mutedVolume = null;
+        }
+      }
+
+      function updateMuteIcon() {
+        const icon = volume === 0 ? "🔇" : volume < 50 ? "🔈" : "🔊";
+        document.getElementById("muteBtn").textContent = icon;
+      }
+
+      /* ---------------- MP3 URL player ---------------- */
+
+      function playMP3() {
+        const url = document.getElementById("mp3url").value.trim();
+        if (!url) return;
+
+        document.getElementById("mp3Title").textContent = url.split("/").pop();
+
+        let audio = document.getElementById("audio");
+        if (!audio) {
+          audio = document.createElement("audio");
+          audio.id = "audio";
+          audio.style.display = "none";
+          document.getElementById("player").appendChild(audio);
+        }
+
+        audio.src = url;
+        audio.volume = volume / 100;
+        audio.onended = () => {
+          if (repeatMode === "one") {
+            audio.currentTime = 0;
+            audio.play();
+          } else {
+            playing = false;
+            sync();
+            document.getElementById("mp3PlayBtn").textContent = "▶";
+          }
+        };
+        audio.onplay = () => {
+          playing = true;
+          sync();
+          document.getElementById("mp3PlayBtn").textContent = "❚❚";
+        };
+        audio.onpause = () => {
+          playing = false;
+          sync();
+          document.getElementById("mp3PlayBtn").textContent = "▶";
+        };
+        audio.ontimeupdate = () => {
+          if (seekDragging) return;
+          const pct = audio.duration
+            ? (audio.currentTime / audio.duration) * 100
+            : 0;
+          const mp3Seek = document.getElementById("mp3Seek");
+          mp3Seek.value = pct;
+          mp3Seek.style.setProperty("--progress", pct + "%");
+          document.getElementById("mp3Cur").textContent = fmtTime(
+            audio.currentTime,
+          );
+        };
+        audio.onloadedmetadata = () => {
+          document.getElementById("mp3Dur").textContent = fmtTime(
+            audio.duration,
+          );
+        };
+        audio.onerror = () => {
+          setStatus(
+            "Couldn't load that MP3 URL. Check the link and try again.",
+            true,
+          );
+        };
+
+        audio.play().catch((e) => {
+          setStatus("Playback blocked: " + e.message, true);
+        });
+
+        document.getElementById("title").textContent = "Local MP3";
+        document.getElementById("artist").textContent = url.split("/").pop();
+        document.getElementById("playBtn").disabled = false;
+      }
+
+      function toggleMP3Play() {
+        const a = document.getElementById("audio");
+        if (!a) return;
+        if (a.paused) a.play();
+        else a.pause();
+      }
+
+      function toggleMP3Mute() {
+        const a = document.getElementById("audio");
+        if (!a) return;
+        a.muted = !a.muted;
+        document.getElementById("mp3MuteBtn").textContent = a.muted
+          ? "🔇"
+          : "🔊";
+      }
+
+      function setMP3Volume(val) {
+        const a = document.getElementById("audio");
+        document
+          .getElementById("mp3Volume")
+          .style.setProperty("--vol", val + "%");
+        if (a) a.volume = val / 100;
+      }
+
+      const mp3SeekEl = document.getElementById("mp3Seek");
+      mp3SeekEl.addEventListener("input", () => {
+        seekDragging = true;
+        mp3SeekEl.style.setProperty("--progress", mp3SeekEl.value + "%");
+        const a = document.getElementById("audio");
+        if (a && a.duration) {
+          document.getElementById("mp3Cur").textContent = fmtTime(
+            (mp3SeekEl.value / 100) * a.duration,
+          );
+        }
+      });
+      mp3SeekEl.addEventListener("change", () => {
+        const a = document.getElementById("audio");
+        if (a && a.duration)
+          a.currentTime = (mp3SeekEl.value / 100) * a.duration;
+        seekDragging = false;
+      });
+
+      /* ---------------- keyboard shortcuts ---------------- */
+
+      document.addEventListener("keydown", (e) => {
+        const tag = (e.target.tagName || "").toLowerCase();
+        if (tag === "input" || tag === "textarea") return;
+
+        switch (e.key) {
+          case " ":
+            e.preventDefault();
+            togglePlay();
+            break;
+          case "ArrowRight":
+            nextTrack();
+            break;
+          case "ArrowLeft":
+            previous();
+            break;
+          case "ArrowUp":
+            e.preventDefault();
+            adjustVolume(5);
+            break;
+          case "ArrowDown":
+            e.preventDefault();
+            adjustVolume(-5);
+            break;
+          case "m":
+          case "M":
+            toggleMute();
+            break;
+          case "s":
+          case "S":
+            toggleShuffle();
+            break;
+        }
+      });
+
+      function adjustVolume(delta) {
+        const v = Math.max(0, Math.min(100, volume + delta));
+        document.getElementById("volume").value = v;
+        setVolume(v);
+        const a = document.getElementById("audio");
+        if (a) a.volume = v / 100;
+      }
+
+      /* ---------------- init ---------------- */
+
+      document.addEventListener("DOMContentLoaded", () => {
+        // Keep YouTube's official player alive but do not show video in the UI.
+        const ph = document.createElement("div");
+        ph.id = "youtubePlayer";
+        ph.style.cssText =
+          "position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;overflow:hidden";
+        document.getElementById("player").appendChild(ph);
+
+        document
+          .getElementById("volume")
+          .style.setProperty("--vol", volume + "%");
+        document
+          .getElementById("mp3Volume")
+          .style.setProperty("--vol", volume + "%");
+        updateMuteIcon();
+        updatePrevNextEnabled();
+      });
+    </script>
+  </body>
+</html>
